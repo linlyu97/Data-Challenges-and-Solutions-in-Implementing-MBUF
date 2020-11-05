@@ -4,7 +4,7 @@ Mileage data analysis Report is a 24 pages report about detailed proper MBUF dat
 
 MBUF Summary PPT is a condensed version summary.
 
-Code is relevent code when doing web scrape and data processing and comparison.
+Dataset Web Scrape.Rmd and 'statee_web_scrape' jupyter notebook are relevent code doing web scrape and 'code_deal with data' is data preprocessing and comparison using pandas.
 
 ## 2. MBUFS Summary Tables:
 
