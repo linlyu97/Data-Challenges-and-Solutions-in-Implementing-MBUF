@@ -1,0 +1,151 @@
+---
+title: "Web Scrape Dataset"
+date: "2/3/2020"
+output: pdf_document
+---
+Step 1: Import dataset
+
+```{r}
+library('xml2')
+library('rvest')
+#2000
+url <- read_html('https://www.fhwa.dot.gov/ohim/hs00/hm43.htm')
+tables <- url %>%
+  html_nodes('body') %>%
+  html_nodes('table') %>%
+  html_table(fill = TRUE)
+tbls2000 <- tables[[3]]
+names(tbls2000)[16] <- 'TOTAL LANE MILES'
+
+#2001
+url <- read_html('https://www.fhwa.dot.gov/ohim/hs01/hm43.htm')
+tables <- url %>%
+  html_nodes('body') %>%
+  html_nodes('table') %>%
+  html_table(fill = TRUE)
+tbls2001 <- tables[[3]]
+
+#2002
+url <- read_html('https://www.fhwa.dot.gov/policy/ohim/hs02/hm43.cfm')
+tables <- url %>%
+  html_nodes('body') %>%
+  html_nodes('table') %>%
+  html_table(fill = TRUE)
+tbls2002 <- tables[[2]]
+
+#2003 - 2006
+maxnum <- 6
+tbls0306 <- data.frame()
+for (page in (3:maxnum)) {
+  print (page)
+  url = paste('https://www.fhwa.dot.gov/policy/ohim/hs0', page, '/htm/hm43.cfm', sep = '')
+  table_url <- read_html(url)
+  tables <- table_url %>%
+    html_nodes('body') %>%
+    html_nodes('.fhwacontainer') %>%
+    html_nodes('.contenttext') %>%
+    html_nodes('table') %>%
+    html_table(fill = TRUE)
+  if (page == 3){
+    tbls0306 <- tables[[3]]
+  }else{
+    tbls0306 <- cbind(tbls0306, tables[[3]])
+  }
+}
+
+#2007-2008
+maxnum <- 8
+tbls0708 <- data.frame()
+for (page in (7:maxnum)) {
+  print (page)
+  url = paste('https://www.fhwa.dot.gov/policyinformation/statistics/200', page, '/hm60.cfm', sep = '')
+  table_url <- read_html(url)
+  tables <- table_url %>%
+    html_nodes('body') %>%
+    html_nodes('.fhwacontainer') %>%
+    html_nodes('.contenttext') %>%
+    html_nodes('table') %>%
+    html_table(fill = TRUE)
+  if (page == 7){
+    tbls0708 <- tables[[2]]
+  }else{
+    tbls0708 <- cbind(tbls0708, tables[[2]])
+  }
+}
+
+#2009-2018
+maxnum <- 18
+tbls0918 <- data.frame()
+for (page in (9:maxnum)) {
+  print (page)
+  if (page == 9){
+    url = paste('https://www.fhwa.dot.gov/policyinformation/statistics/200', page, '/hm60.cfm', sep = '')
+  }else{
+    url = paste('https://www.fhwa.dot.gov/policyinformation/statistics/20', page, '/hm60.cfm', sep = '')
+  }
+  table_url <- read_html(url)
+  tables <- table_url %>%
+    html_nodes('body') %>%
+    html_nodes('.fhwacontainer') %>%
+    html_nodes('.contenttext') %>%
+    html_nodes('table') %>%
+    html_table(fill = TRUE)
+  if (page == 9){
+    tbls0918 <- tables[[2]]
+  }else{
+    tbls0918 <- cbind(tbls0918, tables[[1]])
+  }
+}
+```
+```{r}
+tbls0008 <- cbind(tbls2000, tbls2001, tbls2002, tbls0306, tbls0708)
+state.df <- data.frame()
+store <- list()
+for (state_index in (2:55)){
+  for (year in (1:9)){
+    former = (year-1)*16+1
+    later = (year)*16
+    if (year == 1){
+      state.df <- tbls0008[state_index, former:later]
+    }else{
+      state.df <- rbind.data.frame(state.df, tbls0008[state_index, former:later])
+    }
+  }
+  store[[state_index-1]] <- state.df
+}
+
+```
+
+```{r}
+state.df2 <- data.frame()
+store2 <- list()
+for (state_index in (2:55)){
+  for (year in (1:10)){
+    former = (year-1)*18+1
+    later = (year)*18
+    if (year == 1){
+      state.df2 <- tbls0918[state_index, former:later]
+    }else{
+      state.df2 <- rbind.data.frame(state.df2, tbls0918[state_index, former:later])
+    }
+  }
+  store2[[state_index-1]] <- state.df2
+}
+```
+
+```{r}
+previous <- c(2000:2008)
+now <- c(2009:2018)
+for (index in (1:54)){
+  rownames(store[[index]]) <- previous
+  rownames(store2[[index]]) <- now
+  store[[index]] <- rbind(tbls0008[1, 1:16], store[[index]])
+  store2[[index]] <- rbind(tbls0918[1, 1:18], store2[[index]])
+  filename1 <- paste('E:/myData/state_00_08_', index, '.csv', sep = '')
+  filename2 <- paste('E:/myData/state_09_18_', index, '.csv', sep = '')
+  write.csv(x = store[[index]], file = filename1)
+  write.csv(x = store2[[index]], file = filename2)
+}
+```
+
+
